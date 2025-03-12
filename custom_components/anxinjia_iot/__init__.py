@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 20:02:00
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-04 16:30:42
+LastEditTime: 2025-03-12 21:25:30
 '''
 import json
 import os
@@ -21,7 +21,7 @@ from .api import fetch_devices,TokenExpiredError
 PLATFORMS = [
     "cover",
     "button",
-    "switch",
+    "light",
 ]
 
 _LOGGER = logging.getLogger(__name__)
