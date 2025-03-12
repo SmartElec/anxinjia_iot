@@ -1,3 +1,5 @@
+此项目为 [Home Assistant](https://www.home-assistant.io/) 的 安心加 插件,需要手机APP上修改用户密码,暂不支持验证码登录
+
 ## 简介
 
 Home Assistant的组件
