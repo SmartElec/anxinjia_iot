@@ -1,0 +1,25 @@
+{
+  "domain": "anxinjia_iot",
+  "name": "\u5b89\u5fc3\u52a0",
+  "version": "v1.0.6",
+  "documentation": "https://github.com/SmartElec/nps",
+  "issue_tracker": "https://github.com/SmartElec/nps/issues",
+  "codeowners": ["@miaoguoqiang"],
+  "requirements": ["aiohttp"],
+  "dependencies": [],
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "platforms": ["switch", "button","cover"],
+   "components": [
+      "button",
+      "switch",
+      "cover"
+  ],
+  "single_config_entry": true,
+  "supports_options": true,
+  "config_flow": true,
+  "translations": {
+    "en": "translations/en.json",
+    "zh": "translations/zh.json"
+}
+}

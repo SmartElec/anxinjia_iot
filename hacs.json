@@ -1,0 +1,6 @@
+{
+    "name": "anxinjia_iot",
+    "homeassistant": "2025.3.0",
+    "country": "CN",
+    "render_readme": true
+}

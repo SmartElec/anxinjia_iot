@@ -1,0 +1,7 @@
+{
+    "invalid_credentials": "Invalid credentials, please check your username and password.",
+    "invalid_token": "Invalid token, please check your user ID and token.",
+    "username_password_required": "Please provide both username and password.",
+    "userid_token_required": "Please provide both user ID and token.",
+    "credentials_required": "You must provide either a username and password or a user ID and token."
+}

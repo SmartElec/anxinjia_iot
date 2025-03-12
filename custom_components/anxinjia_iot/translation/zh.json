@@ -1,0 +1,7 @@
+{
+    "invalid_credentials": "无效的凭证，请检查您的用户名和密码。",
+    "invalid_token": "无效的令牌，请检查您的用户 ID 和令牌。",
+    "username_password_required": "请提供用户名和密码。",
+    "userid_token_required": "请提供用户 ID 和令牌。",
+    "credentials_required": "至少需要填写用户名与密码，或者用户 ID 与 token。"
+}
