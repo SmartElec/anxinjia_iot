@@ -422,7 +422,7 @@ async def async_get_all_devices_status(eq_numbers:list[str], access_token: str)-
             "Content-Type": "application/json; charset=utf-8",
             "traceId": generate_trace_id()
         }
-
+        timeout = aiohttp.ClientTimeout(total=10, connect=5, sock_read=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(GET_STATUS_URL, headers=headers, json=payload) as response:
                 if response.status == 200:

@@ -9,3 +9,11 @@ Home Assistant的组件
 此Home Assistant的组件可以让安心加对接HomeAssistant平台上的设备,控制设备、查询上报设备状态。
 
 注意：本插件只负责上报HomeAssistant的设备状态信息到服务器，控制功能需要在安心加平台上配置,需要联网使用。
+
+
+
+## 捐赠
+
+如果此项目对你有帮助，可以扫描下方二维码请我喝杯咖啡 :)
+
+![](assets/mm.png)
