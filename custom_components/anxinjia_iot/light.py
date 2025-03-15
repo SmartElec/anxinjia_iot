@@ -25,6 +25,13 @@ class AnxinJiaLight(LightEntity):
             "model": self._model_type,  # 设备型号
             "sw_version": "v1.0",  # 软件版本
         }
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
 
     @property
     def is_on(self):
@@ -101,4 +108,4 @@ async def async_setup_entry(
     async def device_update_timer(now):
         await async_update_devices(hass, access_token, eq_numbers, new_entities)
 
-    async_track_time_interval(hass, device_update_timer, timedelta(seconds=300))
+    async_track_time_interval(hass, device_update_timer, timedelta(seconds=60))

@@ -21,7 +21,7 @@ from .api import fetch_devices,TokenExpiredError
 PLATFORMS = [
     "cover",
     "button",
-    "light",
+    "switch",
 ]
 
 _LOGGER = logging.getLogger(__name__)

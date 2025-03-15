@@ -167,4 +167,4 @@ async def async_setup_entry(
         await async_update_devices(hass, access_token, eq_numbers, new_entities)
 
     # 
-    async_track_time_interval(hass, device_update_timer, timedelta(seconds=300))
+    async_track_time_interval(hass, device_update_timer, timedelta(seconds=60))
