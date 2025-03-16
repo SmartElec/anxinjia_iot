@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 20:02:00
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-12 21:25:30
+LastEditTime: 2025-03-04 16:30:42
 '''
 import json
 import os
@@ -99,7 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         device_entry = device_registry.async_get_or_create(
             config_entry_id=config_entry.entry_id,
             identifiers={(DOMAIN, device.eq_number)},
-            name= f"{device.physics_name}/{device.eq_name}",
+            name= f"{device.name}",
             model=f"aciga.{device.physics_id}.{device.model_type}",
             serial_number = device.eq_uid,
             manufacturer="aciga",

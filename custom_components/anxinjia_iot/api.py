@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 22:16:11
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-12 16:46:42
+LastEditTime: 2025-03-16 11:57:17
 '''
 import aiohttp
 import asyncio
@@ -22,7 +22,17 @@ from .const import DOMAIN,CONF_TOKEN,CONF_USER_ID
 # 创建 logger 实例
 _LOGGER = logging.getLogger(__name__)
 
-async def fetch_AddressId_Devices(access_token:str, addressId:str,retries: int = 3):
+# 定义全局变量 access_token
+access_token = None
+
+def set_access_token(token):
+    global access_token
+    access_token = token
+
+def get_access_token():
+    return access_token
+    
+async def fetch_AddressId_Devices(addressId:str,retries: int = 3):
 
     IMPORT_AddrDevice_URL = "https://service.aciga.com.cn/IntelligentHome/addressDeviceManagement/addressDevice/pageList"
     if access_token is None:
@@ -91,7 +101,7 @@ async def fetch_AddressId_Devices(access_token:str, addressId:str,retries: int =
         _LOGGER.error(f"导入设备信息失败,最后的异常: {last_exception}")
     return None
 
-async def fetch_user_devices(access_token:str, retries: int = 3):
+async def fetch_user_devices(retries: int = 3):
 
     IMPORT_UserDevice_URL = "https://service.aciga.com.cn/IntelligentHome/addressDeviceManagement/userDevice/needImport"
     if access_token is None:
@@ -154,6 +164,7 @@ async def fetch_user_devices(access_token:str, retries: int = 3):
     return None
 
 async def fetch_devices(hass: HomeAssistant, config_entry: ConfigEntry):
+    global access_token
     access_token = config_entry.data.get(CONF_TOKEN)
     user_id = config_entry.data.get(CONF_USER_ID)
 
@@ -163,7 +174,7 @@ async def fetch_devices(hass: HomeAssistant, config_entry: ConfigEntry):
 
     telephone = userInfo.get("userPhone")
 
-    DefaultRoomInfo = await Get_Default_Room(access_token,user_id)
+    DefaultRoomInfo = await Get_Default_Room(user_id)
     if DefaultRoomInfo:
         addressId = DefaultRoomInfo.get("addressId")
 
@@ -172,38 +183,38 @@ async def fetch_devices(hass: HomeAssistant, config_entry: ConfigEntry):
 
     hass.data[DOMAIN]['addressId'] = addressId
 
-    devices = await fetch_user_devices(access_token)
+    devices = await fetch_user_devices()
     if devices:
         return devices    
 
-    result = await async_active_addressId(access_token,addressId)
+    result = await async_active_addressId(addressId)
     if result == False:
         return None
 
-    result = await factory_token_get(access_token,28,telephone)
+    result = await factory_token_get(28,telephone)
     if result == False:
         return None
-    result = await async_GetFloorDevice(access_token,addressId)
-    if result == False:
-        return None
-
-    result = await factory_token_get(access_token,5,telephone)
-    if result == False:
-        return None
-    result = await async_active_addressId(access_token,addressId)
+    result = await async_GetFloorDevice(addressId)
     if result == False:
         return None
 
-    result = await factory_token_get(access_token,1,telephone)
+    result = await factory_token_get(5,telephone)
     if result == False:
         return None
-    devices = await fetch_AddressId_Devices(access_token,addressId)
+    result = await async_active_addressId(addressId)
+    if result == False:
+        return None
+
+    result = await factory_token_get(1,telephone)
+    if result == False:
+        return None
+    devices = await fetch_AddressId_Devices(addressId)
     #if devices is None:
-    #    devices = fetch_user_devices(access_token)
+    #    devices = fetch_user_devices()
 
     return devices
 
-async def factory_token_get(access_token:str,supplierType:int,telephone:str)->bool:
+async def factory_token_get(supplierType:int,telephone:str)->bool:
     FACTORY_TOKEN_GET_URL ="https://service.aciga.com.cn/IntelligentHome/userToken/factory/getToken"
     # 构建请求头
     headers = {
@@ -282,7 +293,7 @@ async def accountEqHouse(telephone:str)->bool:
 
     return False  # 在发生错误或失败时返回 False
 
-async def Get_Default_Room(access_token:str,userId:str):
+async def Get_Default_Room(userId:str):
     DEFAULT_ROOM_URL ="https://service.aciga.com.cn/service-user/service-user/aot/userRoom/getDefaultRoom"
 
     # 构建请求头
@@ -320,7 +331,7 @@ async def Get_Default_Room(access_token:str,userId:str):
 
     return None  # 在发生错误或失败时返回 None 
 
-async def async_active_addressId(access_token:str,addressId:str)->bool:
+async def async_active_addressId(addressId:str)->bool:
     ACTIVE_ADDRESS_URL ="https://service.aciga.com.cn/IntelligentHome/addressDeviceManagement/addressId/active"
     headers = {
         "Authorization": access_token,
@@ -352,7 +363,7 @@ async def async_active_addressId(access_token:str,addressId:str)->bool:
 
     return False  # 在发生错误或失败时返回 False 
 
-async def async_GetFloorDevice(access_token:str,addressId:str)->bool:
+async def async_GetFloorDevice(addressId:str)->bool:
     url ="https://service.aciga.com.cn/IntelligentHome/addressDeviceManagement/addressFloorDevice/list"
     if access_token is None:
         _LOGGER.error("Token 无效")
@@ -400,11 +411,10 @@ async def async_GetFloorDevice(access_token:str,addressId:str)->bool:
 
     return False  # 在发生错误或失败时返回 False
 
-async def async_get_all_devices_status(eq_numbers:list[str], access_token: str)-> Optional[dict[str, bool]]:
+async def async_get_all_devices_status(eq_numbers:list[str])-> Optional[dict[str, bool]]:
     """
     从 API 获取所有设备状态，并解析出每个虚拟设备的 isonoff 状态。
 
-    :param access_token: 用于 API 认证的访问令牌
     :param eq_numbers: 设备的 eqNumber 列表
     :return: 一个字典，键为虚拟设备的 unique_id，值为布尔状态（True 或 False）
     """
@@ -456,7 +466,7 @@ async def async_get_all_devices_status(eq_numbers:list[str], access_token: str)-
         _LOGGER.error(f"Error fetching device status: {e}")
         return None
 
-async def async_Control_switch(access_token:str,dev_name:str,unique_id:str,model_type:int, is_open:bool)->bool:
+async def async_Control_switch(dev_name:str,unique_id:str,model_type:int, is_open:bool)->bool:
     """发送控制请求到设备"""
     CONTROL_SW_URL = "https://service.aciga.com.cn/IoT/smart-control/job/createJob"
     # 构建请求头
@@ -515,7 +525,7 @@ async def async_Control_switch(access_token:str,dev_name:str,unique_id:str,model
 
     return False  # 在发生错误或失败时返回 False
 
-async def async_Control_cover(access_token:str,dev_name:str,unique_id:str,model_type:int, opt_means:str)->bool:
+async def async_Control_cover(dev_name:str,unique_id:str,model_type:int, opt_means:str)->bool:
     """发送控制请求到设备"""
     CONTROL_COVER_URL = "https://service.aciga.com.cn/IoT/smart-control/job/createJob"
     # 构建请求头
@@ -574,11 +584,11 @@ async def async_Control_cover(access_token:str,dev_name:str,unique_id:str,model_
 
     return False  # 在发生错误或失败时返回 False 
 
-async def getUserDetailById(access_token:str,customId:str):
+async def getUserDetailById(input_token:str,customId:str):
     USER_INFO_URL = "https://service.aciga.com.cn/service-user/service-user/aot/user/v1/getUserDetailById"
     # 构建请求头
     headers = {
-        "Authorization": access_token,
+        "Authorization": input_token,
         "Content-Type": "application/json; charset=utf-8",
         "traceId": generate_trace_id()
     }
@@ -608,7 +618,7 @@ async def getUserDetailById(access_token:str,customId:str):
 
     return None
 
-async def async_get_SceneService(access_token: str, addressId: str):
+async def async_get_SceneService(addressId: str):
     QrySceneUrl = "https://service.aciga.com.cn/SceneService/scene/qryScene"
     """Asynchronously get scene service request."""
     # 构建请求头
@@ -644,7 +654,7 @@ async def async_get_SceneService(access_token: str, addressId: str):
 
     return None
 
-async def async_run_SceneService(access_token: str, SceneId: str, SceneName: str)-> None:
+async def async_run_SceneService(SceneId: str, SceneName: str)-> None:
     """Asynchronously get scene service request."""
     RunSceneurl = "https://service.aciga.com.cn/SceneService/ctrl/runScene"
     # 构建请求头
@@ -684,7 +694,7 @@ async def async_login_auth2(username, password):
         username - 登录用户名（字符串）
         password - 登录密码（字符串）
     返回：
-        access_token - 成功时返回访问令牌,失败返回None 
+        access_token_data - 成功时返回访问令牌,失败返回None 
     """
 
     # 使用 aiohttp 异步请求第一个 API 获取 auth_metadata

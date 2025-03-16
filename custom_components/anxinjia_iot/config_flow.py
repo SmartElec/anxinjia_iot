@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-27 16:37:41
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-12 16:46:15
+LastEditTime: 2025-03-16 11:56:57
 '''
 import logging
 import voluptuous as vol
@@ -12,8 +12,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from homeassistant.helpers import translation
 from .const import DOMAIN,CONF_USER_ID,CONF_TOKEN
-from .api import async_login_auth2  # Import your async function
-from .api import getUserDetailById
+from .api import async_login_auth2,getUserDetailById
 
 # 创建 logger 实例
 _LOGGER = logging.getLogger(__name__)
@@ -48,7 +47,7 @@ class AnxinJiaControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_id = access_token_data.get("customerId")
                 customerName = access_token_data.get("customerName")
                 combined_title = f"{customerName}:{username}"
-
+ 
                 return self.async_create_entry(title=combined_title, data={
                     CONF_USER_ID: user_id,
                     CONF_TOKEN: new_token
@@ -100,7 +99,7 @@ class AnxinJiaControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_id = access_token_data.get("customerId")
                 customerName = access_token_data.get("customerName")
                 combined_title = f"{customerName}:{username}"
-
+                
                 await self.hass.config_entries.async_update_entry(current_entry,data={
                     CONF_USER_ID: user_id,
                     CONF_TOKEN: new_token
@@ -116,7 +115,7 @@ class AnxinJiaControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 userNickname = userinfo.get("userNickname")
                 userPhone = userinfo.get("userPhone")
                 combined_title = f"{userNickname}:{userPhone}"
-
+                
                 await self.hass.config_entries.async_update_entry(current_entry, data={
                     CONF_USER_ID: userid_input,
                     CONF_TOKEN: token_input

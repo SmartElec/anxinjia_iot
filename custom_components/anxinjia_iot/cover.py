@@ -23,9 +23,6 @@ async def async_setup_entry(
     """Set up the AnxinJia switches from a config entry."""
     devices = hass.data[DOMAIN]['devices'][config_entry.entry_id]
 
-    # 从 config_entry.data 获取 access_token
-    access_token = config_entry.data.get(CONF_TOKEN)
-
     # 创建实体列表
     new_entities = []
     
@@ -34,7 +31,7 @@ async def async_setup_entry(
         # 替换为适当的属性访问
         if device_info.model_type == 102004:
             for virtual_model in device_info.virtual_models:  # 确保使用正确的属性名称
-                entity = AnxinJiaCurtain(device_info, virtual_model, access_token)
+                entity = AnxinJiaCurtain(device_info, virtual_model)
                 new_entities.append(entity)
 
     # 异步添加实体到平台
@@ -44,14 +41,13 @@ async def async_setup_entry(
 class AnxinJiaCurtain(CoverEntity):
     """Representation of a curtain."""
 
-    def __init__(self, device, virtual_model,access_token):
+    def __init__(self, device, virtual_model):
         """Initialize the curtain."""
-        self._device = device
-        self._name = f"{device.room_name}{virtual_model.get('virtualName')}"  # 使用 Device 类的 name 属性
+        self._device = device     
+        self._name = f"{device.room_name}-{virtual_model.get('virtualName')}"  # 使用 Device 类的 name 属性
         self._unique_id = virtual_model.get("virtualNumber")  # 使用 Device 类的 unique_id 属性
         self._model_type = virtual_model.get("modelType")  # 获取设备的模型类型
         self._is_open = False  # True for open, False for closed
-        self._access_token = access_token  # 保存访问令牌
         self._attr_device_class = CoverDeviceClass.CURTAIN 
         self._attr_unique_id = self._unique_id  # 确保唯一标识符
         self._attr_name = self._name  # 实体名称
@@ -68,7 +64,7 @@ class AnxinJiaCurtain(CoverEntity):
         
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device.eq_number)},  # 设备的唯一标识符
-            "name": self._name,  # 设备名称
+            "name": device.name ,  # 设备名称
             "manufacturer": "aciga",  # 制造商
             "model": self._model_type,  # 设备型号
             "sw_version": "v1.0",  # 软件版本
@@ -98,7 +94,7 @@ class AnxinJiaCurtain(CoverEntity):
     def is_closed(self):
         """Return if the cover is closed."""
         return None
-        
+
     @property
     def current_cover_position(self):
         """Return the current position.
@@ -117,9 +113,9 @@ class AnxinJiaCurtain(CoverEntity):
         
         try:
             if pos > 50:
-                result = await async_Control_cover(self._access_token,self._name,self._unique_id,self._model_type, "open")
+                result = await async_Control_cover(self._name,self._unique_id,self._model_type, "open")
             else:
-                result = await async_Control_cover(self._access_token,self._name,self._unique_id,self._model_type, "close")
+                result = await async_Control_cover(self._name,self._unique_id,self._model_type, "close")
                 if result:
                     self._is_open = False
                 _LOGGER.info(f"set_cover API 调用成功: {result}")
@@ -131,7 +127,7 @@ class AnxinJiaCurtain(CoverEntity):
         # 在这里实现停止窗帘的逻辑，例如发送命令到设备
         try:
             # 调用 api.py 中的异步函数
-            result = await async_Control_cover(self._access_token,self._name,self._unique_id,self._model_type, "stop")
+            result = await async_Control_cover(self._name,self._unique_id,self._model_type, "stop")
             # 处理 result，记录日志或更新状态
             if result:
                 self._is_open = False
@@ -144,7 +140,7 @@ class AnxinJiaCurtain(CoverEntity):
         # 在这里实现打开窗帘的逻辑，例如发送命令到设备
         try:
             # 调用 api.py 中的异步函数
-            result = await async_Control_cover(self._access_token,self._name,self._unique_id,self._model_type, "open")
+            result = await async_Control_cover(self._name,self._unique_id,self._model_type, "open")
             # 处理 result，记录日志或更新状态
             if result:
                 self._is_open = True
@@ -157,7 +153,7 @@ class AnxinJiaCurtain(CoverEntity):
         # 在这里实现关闭窗帘的逻辑，例如发送命令到设备
         try:
             # 调用 api.py 中的异步函数
-            result = await async_Control_cover(self._access_token,self._name,self._unique_id,self._model_type, "close")
+            result = await async_Control_cover(self._name,self._unique_id,self._model_type, "close")
             # 处理 result，记录日志或更新状态
             if result:
                 self._is_open = False
