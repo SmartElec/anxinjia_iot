@@ -44,7 +44,7 @@ class AnxinJiaCurtain(CoverEntity):
     def __init__(self, device, virtual_model):
         """Initialize the curtain."""
         self._device = device     
-        self._name = f"{device.room_name}-{virtual_model.get('virtualName')}"  # 使用 Device 类的 name 属性
+        self._name = f"{device.room_name}{virtual_model.get('virtualName')}"  # 使用 Device 类的 name 属性
         self._unique_id = virtual_model.get("virtualNumber")  # 使用 Device 类的 unique_id 属性
         self._model_type = virtual_model.get("modelType")  # 获取设备的模型类型
         self._is_open = False  # True for open, False for closed

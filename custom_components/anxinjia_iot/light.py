@@ -4,14 +4,18 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.light import LightEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN, CONF_TOKEN
-from .api import async_Control_switch, async_get_all_devices_status
+from .api import async_Control_SwitchOrLight, async_get_all_devices_status
 
 _LOGGER = logging.getLogger(__name__)
 
 class AnxinJiaLight(LightEntity):
     def __init__(self, device, virtual_model):
         self._device = device     
-        self._name = f"{device.room_name}-{virtual_model.get('virtualName')}"  # 使用 Device 类的 name 属性
+        self.is_virtual = virtual_model.get("is_virtual", False)
+        if self.is_virtual:
+            self._name = virtual_model.get("virtualName")  # 只使用虚拟名称
+        else:
+            self._name = f"{device.room_name}{virtual_model.get('virtualName')}"  # 使用房间名称和虚拟名称
         self._unique_id = virtual_model.get("virtualNumber")  # 使用 Device 类的 unique_id 属性
         self._model_type = virtual_model.get("modelType")  # 获取设备的模型类型
         self._state = False  # 默认状态
@@ -31,27 +35,43 @@ class AnxinJiaLight(LightEntity):
         
     async def async_turn_on(self, **kwargs):
         """Turn the light on."""
-        try:
-            # 调用 api.py 中的异步函数
-            result = await async_Control_switch(self._name, self._unique_id, self._model_type, True)
-            if result:
-                self._state = True
-                _LOGGER.debug("灯已打开")
-            _LOGGER.info(f"light on API 调用成功: {result}")
-        except Exception as e:
-            _LOGGER.error(f"light on API 调用失败: {e}")
+        if self.is_virtual:
+            # 虚拟开关打开状态
+            self._state = True
+            self.async_schedule_update_ha_state()  # 更新状态到 Home Assistant
+            _LOGGER.debug("虚拟灯具已打开")
+
+            # 等待2秒后自动关闭
+            await asyncio.sleep(2)
+            await self.async_turn_off()  # 关闭虚拟开关
+        else:
+            try:
+                # 调用 api.py 中的异步函数
+                result = await async_Control_SwitchOrLight(self._name, self._unique_id, self._model_type, True)
+                if result:
+                    self._state = True
+                    _LOGGER.debug("灯已打开")
+                _LOGGER.info(f"light on API 调用成功: {result}")
+            except Exception as e:
+                _LOGGER.error(f"light on API 调用失败: {e}")
 
     async def async_turn_off(self, **kwargs):
         """Turn the light off."""
-        try:
-            # 调用 api.py 中的异步函数
-            result = await async_Control_switch(self._name, self._unique_id, self._model_type, False)
-            if result:
-                self._state = False
-                _LOGGER.debug("灯已关闭")
-            _LOGGER.info(f"light off API 调用成功: {result}")
-        except Exception as e:
-            _LOGGER.error(f"light off API 调用失败: {e}")
+        if self.is_virtual:
+            # 虚拟开关直接关闭状态并更新 Home Assistant
+            self._state = False
+            self.async_schedule_update_ha_state()  # 更新 Home Assistant 状态
+            _LOGGER.debug("虚拟开关已关闭")
+        else:
+            try:
+                # 调用 api.py 中的异步函数
+                result = await async_Control_SwitchOrLight(self._name, self._unique_id, self._model_type, False)
+                if result:
+                    self._state = False
+                    _LOGGER.debug("灯已关闭")
+                _LOGGER.info(f"light off API 调用成功: {result}")
+            except Exception as e:
+                _LOGGER.error(f"light off API 调用失败: {e}")
 
     async def async_added_to_hass(self):
         """Entity is added to Home Assistant."""
@@ -114,9 +134,19 @@ async def async_setup_entry(
     for device_info in devices:
         if device_info.model_type == 102001:
             for virtual_model in device_info.virtual_models:
+                actual_light = AnxinJiaLight(device_info, virtual_model)
+                new_entities.append(actual_light)
+        # 如果设备模型类型是 101001，则添加相应的虚拟灯泡
+        if device_info.model_type == 101001:
+            for i in range(1, 5):  # 创建四个虚拟灯泡
+                virtual_model = {
+                    "virtualName": f"场景模式{i}",
+                    "virtualNumber": f"virtual_switch_{i}",
+                    "modelType": 101001,
+                    "is_virtual": True,
+                }
                 entity = AnxinJiaLight(device_info, virtual_model)
                 new_entities.append(entity)
-
     # 异步添加实体到平台
     if new_entities:
         async_add_entities(new_entities, update_before_add=True)

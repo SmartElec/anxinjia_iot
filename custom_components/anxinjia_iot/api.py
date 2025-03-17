@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 22:16:11
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-16 11:57:17
+LastEditTime: 2025-03-17 11:02:56
 '''
 import aiohttp
 import asyncio
@@ -466,7 +466,7 @@ async def async_get_all_devices_status(eq_numbers:list[str])-> Optional[dict[str
         _LOGGER.error(f"Error fetching device status: {e}")
         return None
 
-async def async_Control_switch(dev_name:str,unique_id:str,model_type:int, is_open:bool)->bool:
+async def async_Control_SwitchOrLight(dev_name:str,unique_id:str,model_type:int, is_open:bool)->bool:
     """发送控制请求到设备"""
     CONTROL_SW_URL = "https://service.aciga.com.cn/IoT/smart-control/job/createJob"
     # 构建请求头

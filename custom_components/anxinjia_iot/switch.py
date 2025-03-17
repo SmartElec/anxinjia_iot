@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 20:02:36
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-02 22:40:43
+LastEditTime: 2025-03-17 10:57:14
 '''
 import logging
 import asyncio
@@ -15,7 +15,7 @@ from homeassistant.components.switch import SwitchEntity,SwitchDeviceClass
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from .const import DOMAIN,CONF_TOKEN
-from .api import async_Control_switch,async_get_all_devices_status
+from .api import async_Control_SwitchOrLight,async_get_all_devices_status
 #from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class AnxinJiaSwitch(SwitchEntity):
         if self.is_virtual:
             self._name = virtual_model.get("virtualName")  # 只使用虚拟名称
         else:
-            self._name = f"{device.room_name}-{virtual_model.get('virtualName')}"  # 使用房间名称和虚拟名称
+            self._name = f"{device.room_name}{virtual_model.get('virtualName')}"  # 使用房间名称和虚拟名称
 
         self._unique_id = virtual_model.get("virtualNumber")  # 使用 Device 类的 unique_id 属性
         self._model_type = virtual_model.get("modelType")  # 获取设备的模型类型
@@ -71,7 +71,7 @@ class AnxinJiaSwitch(SwitchEntity):
             # 对于实际开关，调用原有的 API 控制逻辑
             try:
                 # 调用 api.py 中的异步函数
-                result = await async_Control_switch(self._name,self._unique_id,self._model_type, True)
+                result = await async_Control_SwitchOrLight(self._name,self._unique_id,self._model_type, True)
                 # 处理 result，记录日志或更新状态
                 if result:
                     self._state = True
@@ -92,7 +92,7 @@ class AnxinJiaSwitch(SwitchEntity):
             # 对于实际开关，调用原有的 API 控制逻辑
             try:
                 # 调用 api.py 中的异步函数
-                result = await async_Control_switch(self._name,self._unique_id,self._model_type, False)
+                result = await async_Control_SwitchOrLight(self._name,self._unique_id,self._model_type, False)
                 # 处理 result，记录日志或更新状态
                 if result:
                     self._state = False
@@ -178,7 +178,7 @@ async def async_setup_entry(
                 new_entities.append(actual_switch )
         # 如果设备模型类型是 101001，则添加相应的虚拟开关
         if device_info.model_type == 101001:
-            for i in range(1, 3):  # 创建两个虚拟开关
+            for i in range(1, 5):  # 创建四个虚拟开关
                 virtual_model = {
                     "virtualName": f"场景模式{i}",
                     "virtualNumber": f"virtual_switch_{i}",
