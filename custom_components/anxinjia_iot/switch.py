@@ -4,7 +4,7 @@ Version: 2.0
 Autor: miaoguoqiang
 Date: 2025-02-24 20:02:36
 LastEditors: miaoguoqiang
-LastEditTime: 2025-03-17 10:57:14
+LastEditTime: 2025-03-24 09:27:08
 '''
 import logging
 import asyncio
@@ -137,14 +137,15 @@ async def async_update_devices(hass: HomeAssistant, eq_numbers: list[str], entit
             _LOGGER.debug(f"Success fetch device statuses: {all_devices_status}")
             # 遍历所有实体，更新状态
             for entity in entities:
-                # 从返回的状态字典中获取对应实体的状态
-                device_status = all_devices_status.get(entity._unique_id)
-                if device_status is not None:
-                    # 更新实体的状态
-                    entity._state = device_status
-                    _LOGGER.debug(f"Updated device state for {entity._name}: {entity._state}")
-                else:
-                    _LOGGER.warning(f"No status found for device {entity._unique_id}")
+                if not entity.is_virtual:
+                    # 从返回的状态字典中获取对应实体的状态
+                    device_status = all_devices_status.get(entity._unique_id)
+                    if device_status is not None:
+                        # 更新实体的状态
+                        entity._state = device_status
+                        _LOGGER.debug(f"Updated device state for {entity._name}: {entity._state}")
+                    else:
+                        _LOGGER.warning(f"No status found for device {entity._unique_id}")
         else:
             _LOGGER.error("Failed to fetch device statuses")
     except Exception as e:
