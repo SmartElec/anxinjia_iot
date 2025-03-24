@@ -1,7 +1,7 @@
 {
   "domain": "anxinjia_iot",
   "name": "\u5b89\u5fc3\u52a0",
-  "version": "v1.1.0",
+  "version": "v1.1.1",
   "documentation": "https://github.com/SmartElec/anxinjia_iot",
   "issue_tracker": "https://github.com/SmartElec/anxinjia_iot/issues",
   "codeowners": ["@miaoguoqiang"],
