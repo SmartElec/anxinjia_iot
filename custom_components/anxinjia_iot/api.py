@@ -687,7 +687,7 @@ async def async_run_SceneService(SceneId: str, SceneName: str)-> None:
         _LOGGER.error(f"控制设备 '{SceneName}' 时发生错误: {e}")
 
 
-async def async_login_auth2(username, password):
+	async def async_login_auth2(username, password):
     """
     整合后的统一登录认证函数 
     参数：
@@ -696,49 +696,79 @@ async def async_login_auth2(username, password):
     返回：
         access_token_data - 成功时返回访问令牌,失败返回None 
     """
+    AUTH_ENDPOINT_URL = "https://service.aciga.com.cn/oauth/token"
 
-    # 使用 aiohttp 异步请求第一个 API 获取 auth_metadata
-    timeout = aiohttp.ClientTimeout(total=10, connect=5, sock_read=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        try:
-            async with session.post('http://typecho.dns.army:3005/auth_metadata', json={'username': username, 'password': password}) as response:
-                response.raise_for_status()  # 检查响应状态
-                auth_response = await response.json()
-                auth_metadata = auth_response.get('auth_metadata')
-                request_url = auth_response.get('request_url')
-                hashed_pwd = auth_response.get('password')
+    def _generate_md5(input_str):
+        md5_hash = hashlib.md5(input_str.encode()).hexdigest() 
+        return md5_hash 
 
-                if not auth_metadata or not request_url:
-                    _LOGGER.error("获取 auth_metadata 或 request_url 失败")
+    CLIENT_ID = "1f99b2e33ea5410290edfcb67b27e05d"
+    CLIENT_SECRET = "4ae6ca4e8f7e4f5096c1eb42e7cf1fbd"
+    API_VERSION = "1.0"
+    DEVICE_TYPE = "PHONE_ANDROID"
+
+    _LOGGER.debug("\n========== 开始登录流程 ==========")
+
+    ts = str(int(time.time() * 1000))
+    if len(ts) != 13:
+        raise ValueError("时间戳生成异常")
+
+    hashed_pwd = _generate_md5(password)
+
+    sign_params = [
+        f"client_secret={CLIENT_SECRET}",
+        f"deviceType={DEVICE_TYPE}",
+        "grant_type=oauth2_pwd",
+        f"password={hashed_pwd}",
+        f"username={username}",
+        f"version={API_VERSION}",
+        ts,
+        CLIENT_ID,
+        CLIENT_SECRET 
+    ]
+    sign_string = "&".join(sign_params[:6]) + "".join(sign_params[6:])
+    final_sign = _generate_md5(sign_string)
+    _LOGGER.debug(f"签名原始参数：{sign_string[:50]}...")
+
+    auth_metadata = json.dumps({ 
+        "ts": ts,
+        "sign": final_sign,
+        "version": API_VERSION,
+        "deviceType": DEVICE_TYPE 
+    })
+
+    headers = {
+        "authMetaData": auth_metadata,
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+    }
+
+    request_url = (
+        f"{AUTH_ENDPOINT_URL}?grant_type=oauth2_pwd&client_id={CLIENT_ID}"
+        f"&client_secret={CLIENT_SECRET}&version={API_VERSION}&deviceType={DEVICE_TYPE}"
+    )
+    payload = f"username={username}&password={hashed_pwd}"
+    _LOGGER.debug(f"[NETWORK] 准备请求：{request_url[:60]}...")
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=10, connect=5, sock_read=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(request_url, headers=headers, data=payload) as response:
+                response.raise_for_status()
+                resp_data = await response.json() 
+                if resp_data.get("success"): 
+                    _LOGGER.info("[SUCCESS] 认证成功,获取到访问令牌")
+                    return resp_data.get("data") or None
+                else:
+                    _LOGGER.error(f"认证失败：{resp_data.get('msg', '未知错误')}")
                     return None
 
-                headers = {
-                    "authMetaData": auth_metadata,
-                    "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
-                }
-
-                payload = f"username={username}&password={hashed_pwd}"
-                _LOGGER.debug(f"[NETWORK] 准备请求：{request_url[:60]}...")
-
-                # 发送认证请求
-                async with session.post(request_url, headers=headers, data=payload) as auth_response:
-                    auth_response.raise_for_status()
-                    resp_data = await auth_response.json()
-
-                    if resp_data.get("success"): 
-                        _LOGGER.info("[SUCCESS] 认证成功,获取到访问令牌")
-                        return resp_data.get("data") or None
-                    else:
-                        _LOGGER.error(f"认证失败：{resp_data.get('msg', '未知错误')}")
-                        return None
-
-        except aiohttp.ClientResponseError as e:
-            _LOGGER.error(f"认证时请求失败 - {e.status}: {e.message}")
-        except aiohttp.ClientError as e:
-            _LOGGER.error(f"认证时连接失败: {e}, 建议重试") 
-        except Exception as e:
-            # 捕获所有其他未知异常
-            _LOGGER.error(f"认证时发生未知错误: {e}")
+    except aiohttp.ClientResponseError as e:
+        _LOGGER.error(f"认证时请求失败 - {e.status}: {e.message}")
+    except aiohttp.ClientError as e:
+        _LOGGER.error(f"认证时连接失败: {e}, 建议重试") 
+    except Exception as e:
+        # 捕获所有其他未知异常
+        _LOGGER.error(f"认证时发生未知错误: {e}")
 
     return None
 
